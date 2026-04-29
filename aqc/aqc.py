@@ -10,7 +10,9 @@ from aqc.hamiltonian import qubo_to_ising, build_problem_hamiltonian, build_driv
 from aqc.utils import qubo_energy, bitstring_to_vector
 from aqc.containers import Query, Result
 
-def build_aqc(query: Query) -> QuantumCircuit:
+from typing import Tuple
+
+def build_aqc(query: Query) -> Tuple[QuantumCircuit, np.ndarray]:
     """
     Build the adiabatic quantum computation circuit for a given QUBO problem.
     """
@@ -63,9 +65,9 @@ def build_aqc(query: Query) -> QuantumCircuit:
         )
         circuit.append(evo_gate, qubits)
 
-    return circuit
+    return circuit, eigseries
 
-def simulate_aqc(circuit: QuantumCircuit, query: Query) -> Result:
+def simulate_aqc(circuit: QuantumCircuit, query: Query, eigseries: np.ndarray) -> Result:
     sim = Aer.get_backend('aer_simulator')
     circuit_state = circuit.copy()
     circuit_state.save_statevector()
