@@ -17,8 +17,10 @@ dev = [
     "mypy~=1.13.0",
 ]
 
-experiments = [ 
+experiments = [
     "matplotlib~=3.10.3",
+    "networkx>=3.0",
+    "qiskit-ibm-runtime>=0.20",
 ]
 
 [tool.setuptools.packages.find]
