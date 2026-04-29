@@ -20,6 +20,7 @@ class Query:
     shots: int = 1024
     trotter_order: int = 2
     trotter_reps: int = 1
+    schedule: str = 'linear'  # 'linear' | 'quadratic' | 'sinusoidal'
 
 @dataclass
 class Result:

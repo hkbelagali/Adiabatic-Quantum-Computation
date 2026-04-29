@@ -47,9 +47,17 @@ def build_aqc(query: Query) -> Tuple[QuantumCircuit, np.ndarray]:
             reps=query.trotter_reps
         )
 
+    _schedules = {
+        'linear':     lambda t: t,
+        'quadratic':  lambda t: t ** 2,
+        'sinusoidal': lambda t: float(np.sin(np.pi * t / 2) ** 2),
+    }
+    schedule_fn = _schedules[query.schedule]
+
     eigseries = []
 
-    for s in timesteps:
+    for t in timesteps:
+        s = schedule_fn(t)
         H_adiabatic = (1 - s) * H_driver + s * H_problem
         H_adiabatic = H_adiabatic.simplify()
 
@@ -87,8 +95,9 @@ def simulate_aqc(circuit: QuantumCircuit, query: Query, eigseries: np.ndarray) -
     state = np.array(state_result.get_statevector())
     prob = np.abs(state) ** 2
 
+    n_qubits = circuit.num_qubits
     result_dict = {
-        bin(i)[2:].zfill(n)[::-1]: prob[i] for i in range(prob.size)
+        bin(i)[2:].zfill(n_qubits)[::-1]: prob[i] for i in range(prob.size)
     }
     eigseries = np.array(eigseries).T
     counts = {
