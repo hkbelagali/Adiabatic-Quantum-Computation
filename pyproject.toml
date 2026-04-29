@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=45", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "aqc"
+version = "0.1.0"
+description = "Adiabatic Quantum Computation"
+requires-python = ">=3.10"
+dependencies = [
+    "qiskit~=2.3.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "ruff~=0.9.4",
+    "mypy~=1.13.0",
+]
+
+experiments = [ 
+    "matplotlib~=3.10.3",
+]
+
+[tool.setuptools.packages.find]
+include = ["aqc*"]
+exclude = ["figures*", "experiments*"]
