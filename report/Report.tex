@@ -1,0 +1,139 @@
+\documentclass[10pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{url}
+\usepackage{hyperref}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{lipsum}
+\usepackage{multicol}
+\usepackage{xcolor}
+\usepackage[super]{natbib}
+\usepackage{physics}
+\usepackage[font=small]{caption}
+\DeclareMathOperator*{\argmin}{arg\,min}
+\addtolength{\abovecaptionskip}{-3mm}
+\addtolength{\textfloatsep}{-5mm}
+\setlength\columnsep{20pt}
+
+\usepackage[a4paper,left=1.50cm, right=1.50cm, top=1.50cm, bottom=1.50cm]{geometry}
+
+
+\author{Hrishikesh Belagali}
+
+\title{Adiabatic Quantum Computation of QUBO Problems}
+
+\begin{document}
+	
+	\begin{center}
+		{\Large \textbf{Adiabatic Quantum Computation of QUBO Problems}}\\
+		\vspace{1em}
+		{\large Hrishikesh Belagali}\\
+		\vspace{1em}
+		\textit{CMSE 890 Project}
+	\end{center}
+
+	\begin{center}
+		\rule{150mm}{0.2mm}
+	\end{center}		
+
+	\vspace{5mm}
+	
+\begin{multicols*}{2}
+
+\section{Introduction}
+Combinatorial optimization problems are ubiquitous across fields, 
+including logistics, finance, machine learning, physics, and many others. These problems
+involve finding an optimal solution to a problem from a finite set of possible solutions,
+which often grows rapidly with the size of the problem. Many combinatorial optimization problems 
+are NP-hard, meaning that there is no known polynomial-time algorithm to solve them exactly.\\\\
+Existing methods for solving combinatorial optimization problems include exact algorithms such as 
+branch-and-bound\cite{AutomaticMethodSolving}, cutting planes\cite{CuttingPlanes1980}, dynamic programming\cite{bellman1957dynamic}, and systematic 
+enumeration\cite{balasAdditiveAlgorithmSolving1965}. However, these methods can be computationally expensive and may not be feasible for large instances. 
+Another class of methods are heuristic algorithms, such as simulated annealing\cite{kirkpatrickOptimizationSimulatedAnnealing1983}, tabu search\cite{gloverTabuSearch1993}, genetic algorithms\cite{sastryGeneticAlgorithms2005}, and many others. These algorithms are often used when exact methods are too slow, but they do not guarantee optimal solutions. \\\\
+Quantum computing has been explored as a potential approach to solving combinatorial optimization problems more efficiently than classical algorithms, leveraging phenomena such as superposition and entanglement. 
+One of the earliest algorithms proposed was quantum stochastic optimization, which was a procedure based on the quantum tunnel effect to escape local minima in optimization problems\cite{apolloniQuantumStochasticOptimization1989a}. It was later renamed to quantum annealing (QA) and proposed 
+as an alternative to simulated annealing for solving combinatorial optimization problems, in which 
+quantum fluctuations were used to escape local minima instead of thermal fluctuations\cite{PDFNumericalImplementation}. It was later shown that quantum annealing demonstrated faster convergence 
+compared to simulated annealing for certain classes of problems\cite{kadowakiQuantumAnnealingTransverse1998}.
+The experimental implementation of QA in a disordered quantum ferromagnet allowed for the algorithm to be 
+considered as an alternative to the standard gate model, involving a designated quantum device\cite{QuantumAnnealingDisordered}. \\\\
+Adiabatic quantum computation (AQC) is another optimization method which aims to leverage quantum mechanics to solve optimization problems. It relies on the adiabatic theorem of quantum mechanics, and works by encoding the solution to the problem in the ground state of a Hamiltonian. Then the system is slowly evolved from an initial Hamiltonian with a known ground state to the problem Hamiltonian. If the evolution is slow enough, the system will remain in the ground state, yielding the optimal solution to the problem. \\\\ 
+
+It has been shown that non-stoquastic AQC, i.e. AQC with a non-stoquastic Hamiltonian is as powerful as the 
+circuit model of quantum computation, and thus can solve any problem that a universal quantum computer can with atmost polynomial overhead\cite{AdiabaticQuantumComputation}.  \\\\
+In this project, we will take a specific class of combinatorial optimization problems,
+known as Quadratic Unconstrained Binary Optimization (QUBO) problems, and implement 
+an adiabatic evolution algorithm to solve them. We will compare the results with classical heuristic 
+methods and analyze the performance. The goal of the project is to understand the factors
+that influence AQC's performance and behavior.
+% \section{Mathematical Formulation}
+% \subsection{Quadratic Unconstrained Binary Optimization}
+% The Quadratic Unconstrained Binary Optimization (QUBO) problem is a combinatorial optimization 
+% problem that minimizes a quadratic objective function defined over binary variables. 
+% Formally, given a symmetric matrix $\mathbf{Q} \in \mathbb{R}^{n \times n}$,
+% the QUBO problem can be expressed as:
+% $$\mathbf{x}^* = \argmin_{\mathbf{x} \in \{0,1\}^n} \mathbf{x}^\top \mathbf{Q} \mathbf{x}$$
+% Several combinatorial problems can be reformulated as QUBO problems, including the Max-Cut problem,
+% Graph Coloring, the Traveling Salesman Problem, and many others~\cite{gloverTutorialFormulatingUsing2019a}. These problems are generally 
+% solved using classical heuristic algorithms, such as simulated annealing, genetic algorithms, and tabu search~\cite{gloverTutorialFormulatingUsing2019a}.
+% In this project, we will formulate the QUBO problem as a Hamiltonian and use adiabatic evolution to 
+% find the optimal solution. 
+% \subsection{Hamiltonian Formulation}
+% The QUBO problem can be written as 
+% $$f(\mathbf{x}) = \sum_{i=1}^n \sum_{j=1}^n \mathbf{Q}_{ij} x_i x_j$$ 
+% First, we will map the variables from $\{0,1\}$ to $\{-1,1\}$ using the 
+% transformation $$x_i = \frac{1 - s_i}{2}$$ where $s_i \in \{-1,1\}$ is a spin variable.
+% Then, $f$ can be rewritten as 
+% \begin{align*}
+% f(\mathbf{s}) &= \sum_{i=1}^n \sum_{j=1}^n \mathbf{Q}_{ij} \frac{1 - s_i}{2} \frac{1 - s_j}{2} \\ 
+% &= \sum_{i=1}^n\sum_{j=1}^n \mathbf{J}_{ij} s_i s_j + \sum_{i=1}^n \mathbf{h}_i s_i + c
+% \end{align*}
+% where $J_{ij}, h_i, c$ are derived from $\mathbf{Q}$. Note that the constant does not affect 
+% the optimization, so we can ignore it. The Hamiltonian is then defined by replacing the 
+% spin variables with the corresponding Pauli-Z operators.
+% $$\mathcal{H} = \sum_{i=1}^n\sum_{j=1}^n \mathbf{J}_{ij} Z_i Z_j + \sum_{i=1}^n \mathbf{h}_i Z_i$$
+% Now, the ground state of $\mathcal{H}$ corresponds to the optimal solution of the QUBO problem.
+% \subsection{Adiabatic Evolution}
+% In adiabatic quantum computation, we start with an initial Hamiltonian $\mathcal{H}_0$ whose 
+% ground state is trivial to prepare. Then, we define a time-dependent Hamiltonian that 
+% interpolates between $\mathcal{H}_0$ and the problem Hamiltonian $\mathcal{H}$. The 
+% solution to the problem is obtained by evolving the system according to the time-dependent 
+% Schrodinger equation and measuring the final state. The key constraint is that the evolution
+% must be slow enough to ensure that the system remains in its ground state throughout the 
+% process, which is guaranteed by the adiabatic theorem. The total evolution time $T$ must satisfy 
+% $$T \gg \frac{1}{\Delta^2}$$
+% where $\Delta$ is the minimum energy gap between the ground state and the first excited state of the Hamiltonian during the evolution.
+% Here, we define the initial Hamiltonian as $$\mathcal{H}_0 = -\sum_{i=1}^n X_i$$
+% where $X_i$ is the Pauli-X operator acting on the $i$-th qubit. 
+% The ground state of $\mathcal{H}_0$ is $\ket{+}^{\otimes n}$, which is a uniform superposition of all possible states.
+% Next, we define the problem Hamiltonian $\mathcal{H}_Q$ as derived in the previous section.
+% Finally, we define the time-dependent Hamiltonian $\mathcal{H}_A(t)$ as 
+% $$\mathcal{H}_A(t) = (1 - s(t)) \mathcal{H}_0 + s(t) \mathcal{H}_Q$$
+% where $s(t)$ is a monotonic function that satisfies $s(0) = 0$ and $s(T) = 1$.
+% The evolution is Trotterized into discrete time steps, and at each step, 
+% we apply the corresponding unitary operator to evolve the state. Note that as $\Delta t \to 0$, 
+% the Hamiltonian is effectively constant during each time step, and the evolution can be 
+% approximated by a sequence of unitary operations corresponding to the Hamiltonian at each time step.
+% \section{Research Plan}
+% \begin{enumerate}
+% 	\item Implement the Hamiltonian formulation of the QUBO problem
+% 	\item Implement the adiabatic evolution using Trotterization
+% 	\item Test the implementation on small instances of QUBO problems and compare the results with classical heuristic algorithms, specifically simulated annealing.
+% 	\item Explore the factors influencing the performance of AQC, such as time step size, total evolution time, number of Trotter steps in relation to
+% 	the energy gap $\Delta$.
+% \end{enumerate}
+% \section{Initial Benchmark}
+% \begin{center}
+% 	% \includegraphics[width=0.95\columnwidth]{energy_comparison.pdf}
+% 	% \captionof{figure}{Minimum cost obtained by AQC and brute-force search for small instances of QUBO problems. The matrix $\mathbf{Q}$ is generated 
+% 	% randomly with entries drawn from a uniform distribution over $[-10, 10]$. The cost values are averaged over 10 trials for each QUBO size. 2nd-order Trotterization 
+% 	% is used and AQC is run on the Aer simulator.}
+% \end{center}
+\bibliography{CMSE890_Project}
+\bibliographystyle{unsrt}
+\end{multicols*}
+\clearpage
+\end{document}

@@ -7,3 +7,11 @@ build/
 **.mplstyle
 *.npz
 
+*.aux
+*.log
+*.fls
+*.out
+*.bbl
+*.blg
+*.fdb_latexmk
+*.synctex.gz
