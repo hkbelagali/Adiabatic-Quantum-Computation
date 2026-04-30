@@ -89,18 +89,17 @@ def plot_all():
         mean   = sp.mean(axis=0)
         std    = sp.std(axis=0)
 
-        ax.errorbar(T_vals, mean, yerr=std, marker="o", linewidth=2, capsize=4, label="AQC mean ± std")
+        ax.errorbar(T_vals, mean, yerr=std, marker="o", linewidth=2, capsize=4, label="AQC")
         ax.axhline(sa_means[n], color="C3", linestyle="--", linewidth=1.5, label=f"SA mean ({sa_means[n]:.2f})")
         ax.set_xscale("log")
         ax.set_title(f"n = {n}")
         ax.set_xlabel("Evolution time T")
         ax.set_ylabel("Success probability")
         ax.set_ylim(0, 1.05)
-        ax.legend(loc="best")
+        ax.legend(loc="best", numpoints=1)
 
     fig.suptitle(
-        f"Success Probability vs Evolution Time "
-        f"(iterations={ITERATIONS}, order={ORDER}, shots={SHOTS})"
+        f"Success Probability vs Evolution Time"
     )
     plt.tight_layout()
     plt.savefig(HERE / "evolution_time.pdf", dpi=200)
@@ -108,5 +107,5 @@ def plot_all():
 
 
 if __name__ == "__main__":
-    run_all()
+    # run_all()
     plot_all()
