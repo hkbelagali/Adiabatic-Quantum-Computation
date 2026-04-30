@@ -39,7 +39,6 @@ def run_instance(args):
         circuit, eigseries = build_aqc(query)
         result = simulate_aqc(circuit, query, eigseries)
         row[ti] = success_probability(result.counts, ground_bs, SHOTS)
-        print(f"n={n} inst={inst} T={T}: p_success={row[ti]:.4f}", flush=True)
 
     return n, inst, row
 
@@ -61,13 +60,11 @@ def run_all():
             T_values=np.array(T_VALUES),
             success_probs=results[n],
         )
-        print(f"Saved results_n{n}.npz")
 
     return results
 
 
 def _sa_mean_by_n():
-    """Return dict {n: mean SA success rate} for random QUBO instances."""
     sa_data  = np.load(HERE.parent / "sa_sweep" / "results.npz", allow_pickle=True)
     labels   = sa_data["labels"].astype(str)
     n_labels = sa_data["n_labels"]
@@ -106,10 +103,8 @@ def plot_all():
         f"(iterations={ITERATIONS}, order={ORDER}, shots={SHOTS})"
     )
     plt.tight_layout()
-    out = HERE / "evolution_time.pdf"
-    plt.savefig(out, dpi=200)
+    plt.savefig(HERE / "evolution_time.pdf", dpi=200)
     plt.close()
-    print(f"Plot saved to {out}")
 
 
 if __name__ == "__main__":
