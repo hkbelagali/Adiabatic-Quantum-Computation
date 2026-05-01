@@ -12,7 +12,7 @@ def save_energy_plot(num_qubits, brute_force_means, adiabatic_means, output_base
     plt.plot(num_qubits, adiabatic_means, marker="s", markersize=8, linewidth=3, linestyle='--',label="AQC minimum cost")
     plt.xlabel("QUBO size")
     plt.ylabel("Average cost")
-    plt.title("Average Cost vs QUBO Size (N=10 trials)")
+    # plt.title("Average Cost vs QUBO Size (N=10 trials)")
     plt.grid(True, alpha=0.3)
     plt.minorticks_off()
     plt.xlim(1.5, 6.5)
@@ -74,7 +74,7 @@ if __name__ == "__main__":
 
     np.savez("energy_comparison.npz", num_qubits=num_qubits, brute_force_means=brute_force_means, adiabatic_means=adiabatic_means)
 
-    plt.style.use("../presentation.mplstyle")
+    plt.style.use("../../presentation.mplstyle")
     data = np.load("energy_comparison.npz")
     num_qubits = data["num_qubits"]
     brute_force_means = data["brute_force_means"]
