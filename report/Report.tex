@@ -12,6 +12,8 @@
 \usepackage{xcolor}
 \usepackage[super]{natbib}
 \usepackage{physics}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
 \usepackage[font=small]{caption}
 \DeclareMathOperator*{\argmin}{arg\,min}
 \addtolength{\abovecaptionskip}{-3mm}
@@ -38,6 +40,16 @@
 	\begin{center}
 		\rule{150mm}{0.2mm}
 	\end{center}		
+
+	\begin{abstract}
+		Combinatorial optimization problems find applications in many fields, and are often computationally demanding to solve. Classical heuristic algorithms are commonly used to find approximate solutions, 
+		but quantum computing has been explored as a potential approach to solve these problems more efficiently. In this project, we implement an adiabatic quantum computation (AQC) algorithm to solve 
+		Quadratic Unconstrained Binary Optimization (QUBO) problems, which are a specific class of combinatorial optimization problems. We analyze the performance of the AQC algorithm by varying parameters such as 
+		total execution time, number of Trotter steps, spectral gap, and schedule functions. We compare the results with classical heuristic methods, and evaluate algorithmic behavior on the \texttt{ibm\_kingston} quantum device. 
+		We find that the quadratic schedule function performs better than the linear and sinusoidal schedules, likely due to its slower evolution near the minimum spectral gap. We also find that the success probability degrades 
+		significantly on the quantum hardware compared to the simulator, and this degradation is not significantly reduced by readout error mitigation, suggesting that the dominant source of error is through decoherence and gate errors. 
+		These results provide insights into engineering AQC algorithms for practical applications, and highlight some of the challenges associated with implementing AQC on near-term quantum devices.
+	\end{abstract}
 
 	\vspace{5mm}
 	
@@ -68,7 +80,7 @@ known as Quadratic Unconstrained Binary Optimization (QUBO) problems, and implem
 an adiabatic evolution algorithm to solve them. We will compare the results with classical heuristic 
 methods and analyze the performance. The goal of the project is to understand the factors
 that influence AQC's performance and behavior.
-\section{Methods}
+\section{Problem Formulation}
 \subsection{Quadratic Unconstrained Binary Optimization}
 The Quadratic Unconstrained Binary Optimization (QUBO) problem is a combinatorial optimization 
 problem that minimizes a quadratic objective function defined over binary variables. 
@@ -88,12 +100,12 @@ transformation $$x_i = \frac{1 - s_i}{2}$$ where $s_i \in \{-1,1\}$ is a spin va
 Then, $f$ can be rewritten as 
 \begin{align*}
 f(\mathbf{s}) &= \sum_{i=1}^n \sum_{j=1}^n \mathbf{Q}_{ij} \frac{1 - s_i}{2} \frac{1 - s_j}{2} \\ 
-&= \sum_{i=1}^n\sum_{j=1}^n \mathbf{J}_{ij} s_i s_j + \sum_{i=1}^n \mathbf{h}_i s_i + c
+&= \sum_{i<j} \mathbf{J}_{ij} s_i s_j + \sum_{i=1}^n \mathbf{h}_i s_i + E_0 \mathbf{I}
 \end{align*}
-where $J_{ij}, h_i, c$ are derived from $\mathbf{Q}$. The full derivation is given in Appendix~\ref{sec:qubo_to_hamiltonian}. Note that the constant does not affect 
+where $J_{ij}, h_i, E_0$ are derived from $\mathbf{Q}$. The full derivation is given in Appendix~\ref{subsec:qubo_to_hamiltonian}. Note that the constant does not affect 
 the optimization, so we can ignore it. The Hamiltonian is then defined by replacing the 
 spin variables with the corresponding Pauli-Z operators.
-$$\mathcal{H} = \sum_{i=1}^n\sum_{j=1}^n \mathbf{J}_{ij} Z_i Z_j + \sum_{i=1}^n \mathbf{h}_i Z_i$$
+$$\mathcal{H} = \sum_{i<j} \mathbf{J}_{ij} Z_i Z_j + \sum_{i=1}^n \mathbf{h}_i Z_i$$
 Now, the ground state of $\mathcal{H}$ corresponds to the optimal solution of the QUBO problem. It is 
 found by implementing the adiabatic evolution as a time evolution operator, and measuring the final state in 
 the computational basis.
@@ -114,26 +126,185 @@ Next, we define the problem Hamiltonian $\mathcal{H}_Q$ as derived in the previo
 Finally, we define the time-dependent Hamiltonian $\mathcal{H}_A(t)$ as 
 $$\mathcal{H}_A(t) = (1 - s(t)) \mathcal{H}_0 + s(t) \mathcal{H}_Q$$
 where $s(t)$ is a monotonic function that satisfies $s(0) = 0$ and $s(T) = 1$.
-The evolution is Trotterized\ref{sec:trotterization} into discrete time steps, and at each step, 
+\begin{center}
+	\centering
+	\includegraphics[width=\columnwidth]{../experiments/eigenseries/eigenseries.pdf}
+	\captionof{figure}{Evolution of the eigenvalues of the Hamiltonian $\mathcal{H}_A(t)$ during the adiabatic evolution. 
+	The ground state is shown in blue, and the first excited state is shown in green. The minimum energy gap 
+	$\Delta$ is the minimum distance between the blue and green curves. The schedule function is given by $s(t)$}
+	\label{fig:adiabatic_evolution}
+\end{center}
+The evolution is Trotterized (Section~\ref{sec:trotterization}) into discrete time steps, and at each step, 
 we apply the corresponding unitary operator to evolve the state. Note that as $\Delta t \to 0$, 
 the Hamiltonian is effectively constant during each time step, and the evolution can be 
 approximated by a sequence of unitary operations corresponding to the Hamiltonian at each time step.
 \subsection{Trotterization}
+\label{sec:trotterization}
 The time evolution operator for a time-dependent Hamiltonian $\mathcal{H}(t)$ is given by the time-ordered exponential:
 $$U(T) = \mathcal{T} \exp\left(-i \int_0^T \mathcal{H}(t) dt\right)$$
 However, this operator is difficult to compute directly. Instead, we can approximate it using Trotterization,
 which breaks the evolution into small time steps $\Delta t$ and approximates the evolution as a product of exponentials of the Hamiltonian at each time step. \\\\
 Let $T$ be the total evolution time, and let $N$ be the number of time steps, so that $\Delta t = \frac{T}{N}$ by construction. The first order Trotterization is given by 
 $$e^{-i (A + B) \Delta t} \approx e^{-i A \Delta t} e^{-i B \Delta t}$$
-where $A$ and $B$ are the two parts of the Hamiltonian. Higher order Trotterization can be achieved by using more complex sequences of exponentials, such as the second order Trotterization:
-$$e^{-i (A + B) \Delta t} \approx e^{-i A \Delta t} e^{-i B \Delta t} e^{-i A \Delta t}$$ 
+where $A$ and $B$ are the two parts of the Hamiltonian. Higher order Trotterization can be achieved by using more complex sequences of exponentials, such as the second order Trotterization.
 The local truncation error is $O(\Delta t^2)$ for the first order Trotterization and $O(\Delta t^3)$ for the second order Trotterization, and the global error is $\mathcal O(\frac{T^2}{N})$ and $\mathcal O(\frac{T^3}{N^2})$ respectively, assuming that $A$ and $B$ do not have explicit time dependence.\\\\
 For a time dependent Hamiltonian, we approximate that the Hamiltonian is roughly constant during each time step, and apply the Trotterization to the Hamiltonian at each time $t$.
 \subsection{Implementation Details} 
 The implementation of AQC was done using \texttt{qiskit}\cite{javadi-abhariQuantumComputingQiskit2024} 2.3.1. The Trotterized evolution was implemented using the \texttt{PauliEvolutionGate}, \texttt{LieTrotter} and 
 \texttt{SuzukiTrotter} classes from \texttt{qiskit}. The algorithm was tested on the \texttt{Aer} simulator, and run on IBM's \texttt{ibm\_kingston} device to analyze performance in a noisy environment. The \texttt{mthree} package was used for readout error mitigation. Calculations were done using \texttt{NumPy}\cite{harrisArrayProgrammingNumPy2020}. The code is available at \href{https://github.com/hkbelagali/Adiabatic-Quantum-Computation}{this} repository.
 \section{Results}
-\bibliography{CMSE890_Project}
+We systematically varied parameters involved in the AQC algorithm in order to analyze their effects on the performance. 
+We compared the results with simulated annealing, and analyzed the performance on a noisy quantum device. The details 
+of the results are given in the following subsections.
+\begin{center}
+	\centering
+	\includegraphics[width=\columnwidth]{../experiments/small_benchmark/energy_comparison.pdf}
+	\captionof{figure}{Minimum state energy found by AQC and simulated annealing for 100 random QUBO instances on $n$ qubits. 
+	The AQC algorithm was run with a total evolution time of $T=10.0$, 100 Trotter steps, and a linear schedule.}
+	\label{fig:simulated_annealing}
+\end{center}
+\subsection{Total Evolution Time}
+\label{sec:evolution_time}
+We varied the total evolution time $T$ keeping the number of Trotter steps fixed, and analyzed the effect on the 
+success probability $p$ of finding the optimal solution. 100 random QUBO instances were 
+generated for each value of $T$, and the AQC algorithm was run on each instance to compute the success probability. The Trotter order was fixed to 2, the number of shots was fixed to 4096, and the number of iterations was fixed to 50. The success probability was compared to simulated annealing on the same QUBO instances. The results are shown in Figure~\ref{fig:evolution_time}.
+\begin{center}
+	\centering
+	\includegraphics[width=\columnwidth]{../experiments/evolution_time/evolution_time.pdf}
+	\captionof{figure}{Effect of total evolution time on the success probability for QUBO instances of $n$ qubits.}
+	\label{fig:evolution_time}
+\end{center}
+The results show that the success probability peaks at a specific value of $T$ for which 
+the evolution is large enough to allow the system to remain in the ground state, but not too large to accumulate significant Trotterization error. The success probability is also lower than simulated annealing across the range of $T$ values, likely due to adiabatic and Trotterization errors. 
+\subsection{Trotterization Steps}
+We varied the number of Trotter steps $N$ while keeping the total evolution time $T$ fixed, and analyzed the effect on the success probability. The total time 
+$T$ was fixed at 10.0, and all other parameters were kept the same as in Section~\ref{sec:evolution_time}. The results are shown in 
+Figure~\ref{fig:trotter_steps}.
+\begin{center}
+	\centering
+	\includegraphics[width=\columnwidth]{../experiments/trotter_steps/trotter_steps.pdf}
+	\captionof{figure}{Effect of number of Trotter steps on the success probability for QUBO instances of $n$ qubits.}
+	\label{fig:trotter_steps}
+\end{center}
+The results show that the success probability increases with the number of Trotter steps as expected. The Trotter error 
+decreases with increasing $N$, leading to a more accurate approximation of the time evolution operator. After a 
+certain point, the success probability flattens out, likely due to the fact that the Trotter error becomes negligible, 
+and the success probability is limited by other factors such as adiabatic error. Additionally, the 
+success probability is virtually the same for the two Trotterization orders, suggesting that the Trotter error is not the dominant source of error in this regime.
+\subsection{Spectral Gap}
+We compute the spectral gap $\Delta$ for each QUBO instance, and analyze its correlation with the success 
+probability $p$. The spectral gap is computed by diagonalizing the Hamiltonian $\mathcal{H}_A(t)$ 
+at each time step, and finding the minimum energy gap between the ground state and the first excited state. 
+The results are shown in Figure~\ref{fig:spectral_gap}.
+\begin{center}
+	\centering
+	\includegraphics[width=\columnwidth]{../experiments/spectral_gap/spectral_gap.pdf}
+	\captionof{figure}{Correlation between spectral gap $\Delta$ and success probability $p$ for QUBO instances of $n$ qubits.}
+	\label{fig:spectral_gap}
+\end{center}
+The success probability is positively correlated with the spectral gap, 
+as expected from the adiabatic theorem. Instances with larger spectral gaps have higher 
+success probabilities, since they have a lower threshold evolution time $T$ required to satisfy the 
+adiabatic condition. In general, the minimum spectral gap appears to occur in the first half of the 
+evolution (Figure~\ref{fig:spectral_gap}). This result sheds light on how to engineer the schedule function 
+$s(t)$, in order to slow down the evolution during the period of the minimum spectral gap, which preserves
+the non-degeneracy of the eigenvalues and allows the system to remain in the ground state throughout the evolution.
+\subsection{Schedule Functions}
+We analyze the effect of different schedule functions $s(t)$ on the success probability. We compare the following schedules:
+\begin{align}
+	s(t) &= \frac{t}{T} \quad &\text{\textit{(linear)}}\\
+	s(t) &= \left(\frac{t}{T}\right)^2 \quad &\text{\textit{(quadratic)}}\\
+	s(t) &= \sin^2\left(\frac{\pi t}{2T}\right) \quad &\text{\textit{(sinusoidal)}}
+\end{align}
+The results are shown in Figure~\ref{fig:schedule_functions}.
+\begin{center}
+	\centering
+	\includegraphics[width=\columnwidth]{../experiments/schedules/schedules.pdf}
+	\captionof{figure}{Effect of different schedule functions on the success probability for QUBO instances of $n$ qubits.}
+	\label{fig:schedule_functions}
+\end{center}
+The success probability has a non-trivial dependence on the schedule function. The values are roughly similar for the linear and sinusoidal schedules, 
+while the quadratic schedule has a higher success probability for the larger QUBO instances. The minimum spectral gap is identical for all schedules (Figure~\ref{fig:adiabatic_evolution}), because it is 
+a property of the Hamiltonian $\mathcal{H}_A(t)$ and therefore independent of the schedule function. However, the schedule function affects the success probability 
+by changing the rate of evolution. Particularly, the quadratic schedule evolves more slowly near the minimum spectral gap, which permits the system to remain in the ground 
+state. 
+\subsection{Quantum Hardware Performance}
+We run the AQC algorithm on IBM's \texttt{ibm\_kingston} device, and compare the results 
+with the \texttt{Aer} simulator. The results are shown in Figure~\ref{fig:hardware_performance}.
+\begin{center}
+	\centering
+	\includegraphics[width=\columnwidth]{../experiments/hardware/hardware_results.pdf}
+	\captionof{figure}{Comparison of success probability on \texttt{ibm\_kingston} device and \texttt{Aer} simulator for QUBO instances of $6$ qubits. Readout
+	error mitigation was applied to the hardware results using \texttt{mthree}.}
+	\label{fig:hardware_performance}
+\end{center}
+The success probability on the hardware is significantly lower than the simulator, likely due to the presence of 
+noise and errors in the quantum device. The results show that the performance degrades as the number of qubits
+increases, which is expected due to higher noise and error rates for larger circuits. Interestingly, the 
+success rate does not significantly change with or without the readout error mitigation, suggesting that 
+the dominant source of error is not through measurements, but rather through gate errors and decoherence during the 
+evolution.
+\section{Discussion}
+In this project, we implemented an adiabatic quantum computation algorithm to solve QUBO problems of 3 to 6 qubits, and systematically varied the evolution time, Trotter steps, spectral gap, and schedule function to assess their impact on success probability. We observed that the evolution time has a critical value that maximizes the success probability, prior to which the evolution is too fast to satisfy the adiabatic condition, and after which the Trotterization error becomes significant. We also observed that the spectral gap is positively correlated with the success probability, and that the quadratic schedule performs better than the linear and sinusoidal schedules due to its slower evolution near the minimum spectral gap. Finally, we found that the performance on the quantum hardware is significantly worse than the noiseless \texttt{Aer} simulator. The dominant source of error appears to be through gate errors and decoherence rather than readout errors, which is why readout error mitigation does little to improve the success probability. \\\\
+We chose to analyze the performance of AQC over other optimization algorithms due to its inherent differences, namely the ability to implement it on a designated quantum device that lies outside the standard gate model. Trotterization was selected as the method for approximating the time evolution due to its simplicity. Some room for future work includes larger scale experiments on more than 6 qubits, although this is difficult due to queue times and noise on current devices. Additionally, it would be interesting to analyze the performance of AQC on other classes of combinatorial optimization problems, such as Max-Cut or Graph Coloring.
+\section{Contributions}
+The work in this project was done by Hrishikesh Belagali. 
+\section*{Appendix}
+The general code structure for the AQC algorithm is as follows:
+{\small
+\begin{algorithmic}[1]
+\Require QUBO matrix $\mathbf{Q} \in \mathbb{R}^{n \times n}$, total evolution time $T$, number of iterations $N$, Trotter order $k$, schedule function $s(t)$
+\Ensure Measurement outcome $\mathbf{x}^* \in \{0,1\}^n$
+
+\State Compute Ising coefficients $J_{ij}, h_i, E_0$ from $\mathbf{Q}$ \Comment{Appendix derivation}
+\State $\mathcal{H}_0 \leftarrow -\sum_{i=1}^{n} X_i$ \Comment{Driver Hamiltonian}
+\State $\mathcal{H}_Q \leftarrow \sum_{i<j} J_{ij} Z_i Z_j + \sum_{i=1}^{n} h_i Z_i$ \Comment{Problem Hamiltonian}
+\State $\Delta t \leftarrow T / N$
+\State $|\psi\rangle \leftarrow |+\rangle^{\otimes n}$ \Comment{Apply $H$ gate to each qubit}
+
+\For{$m = 0, 1, \ldots, N-1$}
+    \State $t_m \leftarrow m / (N - 1)$
+    \State $s_m \leftarrow s(t_m)$ \Comment{Evaluate schedule function}
+    \State $\mathcal{H}_A \leftarrow (1 - s_m)\,\mathcal{H}_0 + s_m\,\mathcal{H}_Q$ \Comment{Adiabatic Hamiltonian}
+    \If{$k = 1$} \Comment{Lie--Trotter}
+        \State $U_m \leftarrow e^{-i\,(1-s_m)\,\mathcal{H}_0\,\Delta t}\; e^{-i\,s_m\,\mathcal{H}_Q\,\Delta t}$
+    \ElsIf{$k = 2$} \Comment{Suzuki--Trotter}
+        \State $U_m \leftarrow e^{-i\,(1-s_m)\,\mathcal{H}_0\,\Delta t/2}\; e^{-i\,s_m\,\mathcal{H}_Q\,\Delta t}\; e^{-i\,(1-s_m)\,\mathcal{H}_0\,\Delta t/2}$
+    \EndIf
+    \State $|\psi\rangle \leftarrow U_m\,|\psi\rangle$
+\EndFor
+\State Measure $|\psi\rangle$ in the computational basis $\rightarrow \mathbf{x}^*$
+\State \Return $\mathbf{x}^*$
+\end{algorithmic}
+\small}
+The complete code for this project is available at \href{https://github.com/hkbelagali/adiabatic-quantum-computation}{this} repository.
+\subsubsection*{Derivation of Hamiltonian from QUBO}
+\label{subsec:qubo_to_hamiltonian}
+Let $\mathbf{Q} \in \mathbb{R}^{n \times n}$ be the matrix defining the QUBO problem, and let $\mathbf{x} \in \{0, 1\}^n$ 
+be a binary vector. Without loss of generality, we can assume that the QUBO matrix $\mathbf{Q}$ is symmetric.
+The objective function is given by
+$$
+\begin{aligned}
+f(\mathbf{x}) &= \mathbf{x}^\top \mathbf{Q} \mathbf{x} = \sum_{i=1}^n \sum_{j=1}^n \mathbf{Q}_{ij} x_i x_j \\
+\end{aligned}
+$$
+We substitute the spin variable transformation $x_i = \frac{1 - s_i}{2}$, where $s_i \in \{-1, 1\}$.
+$$
+\begin{aligned}
+f(\mathbf{s}) &= \sum_{i=1}^n \sum_{j=1}^n \mathbf{Q}_{ij} \pqty{\frac{1 - s_i}{2}} \pqty{\frac{1 - s_j}{2}}\\
+&= \frac{1}{4} \sum_{i=1}^n \sum_{j=1}^n \mathbf{Q}_{ij} (1 - s_i)(1 - s_j) \\
+&= \frac{1}{4} \sum_{i=1}^n \sum_{j=1}^n \mathbf{Q}_{ij} (1 - s_i - s_j + s_i s_j) \\
+&= \frac{1}{2} \sum_{i=1}^n \frac{\mathbf{Q}_{ii}}{2} + \frac{1}{4} \sum_{i<j} \mathbf{Q}_{ij} - \sum_{i=1}^n \frac{\mathbf{Q}_{ii}}{2} s_i\\
+&+\frac{1}{4} \sum_{i<j} \mathbf{Q}_{ij} (s_i + s_j) + \frac{1}{4} \sum_{i<j} \mathbf{Q}_{ij} s_i s_j \\
+\end{aligned}
+$$
+Now, we can define the Hamiltonian by replacing the spin variables with the corresponding 
+Pauli Z operators:
+$$\mathcal{H}_{Q} = E_0 I + \sum_{i=1}^n \mathbf{h}_i Z_i + \sum_{i<j} \mathbf{J}_{ij} Z_i Z_j$$
+where $$\mathbf{h}_i = -\frac{\mathbf{Q}_{ii}}{2} - \sum_{i \neq j} \frac{\mathbf{Q}_{ij}}{4}$$
+$$\mathbf{J}_{ij} = \frac{\mathbf{Q}_{ij}}{4}$$
+$$E_0 = \frac{1}{2} \sum_{i=1}^n \frac{\mathbf{Q}_{ii}}{2} + \frac{1}{4} \sum_{i\neq j} \mathbf{Q}_{ij}$$
+\bibliography{CMSE890_Project} 
 \bibliographystyle{unsrt}
 \end{multicols*}
 \clearpage
