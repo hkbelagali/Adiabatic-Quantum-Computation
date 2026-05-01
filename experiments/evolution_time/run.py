@@ -17,12 +17,12 @@ from aqc.aqc import build_aqc, simulate_aqc
 
 HERE = Path(__file__).parent
 
-N_SIZES     = [3, 4, 5, 6]
+N_SIZES = [3, 4, 5, 6]
 N_INSTANCES = 100
-T_VALUES    = [0.1, 0.5, 1.0, 5.0, 10.0, 50.0, 100.0]
-ITERATIONS  = 50
-ORDER       = 2
-SHOTS       = 4096
+T_VALUES = [0.1, 0.5, 1.0, 5.0, 10.0, 50.0, 100.0]
+ITERATIONS = 50
+ORDER = 2
+SHOTS = 4096
 
 
 def run_instance(args):
@@ -98,11 +98,11 @@ def plot_all():
         ax.set_ylim(0, 1.05)
         ax.legend(loc="best", numpoints=1)
 
-    fig.suptitle(
-        f"Success Probability vs Evolution Time"
-    )
+    # fig.suptitle(
+    #     f"Success Probability vs Evolution Time"
+    # )
     plt.tight_layout()
-    plt.savefig(HERE / "evolution_time.pdf", dpi=200)
+    plt.savefig(HERE / "evolution_time.svg", dpi=200)
     plt.close()
 
 
