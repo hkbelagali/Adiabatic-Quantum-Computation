@@ -17,11 +17,11 @@ from aqc.aqc import build_aqc, simulate_aqc
 HERE     = Path(__file__).parent
 EXP2_DIR = HERE.parent / "evolution_time"
 
-N            = 3
-N_INSTANCES  = 10
+N = 3
+N_INSTANCES = 10
 TROTTER_STEPS = [5, 10, 20, 40, 80]
-TOP_K        = 3        
-SHOTS        = 4096
+TOP_K = 3        
+SHOTS = 4096
 
 def pick_top_instances(k: int):
     data = np.load(EXP2_DIR / f"results_n{N}.npz")

@@ -132,9 +132,9 @@ def main():
         ax.set_ylim(0, 1.05)
         ax.legend(loc="best")
 
-    fig.suptitle("Hardware vs Simulator Success Probability")
+    # fig.suptitle("Hardware vs Simulator Success Probability")
     plt.tight_layout()
-    plt.savefig(HERE / "hardware_results.pdf", dpi=200)
+    plt.savefig(HERE / "hardware_results.svg", dpi=200)
     plt.close()
 
     if circuit_depths:
@@ -157,7 +157,7 @@ def main():
 
         fig2.suptitle("Success Probability vs Circuit Depth")
         plt.tight_layout()
-        plt.savefig(HERE / "hardware_depth.pdf", dpi=200)
+        plt.savefig(HERE / "hardware_depth.svg", dpi=200)
         plt.close()
 
 
