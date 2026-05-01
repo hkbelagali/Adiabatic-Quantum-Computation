@@ -53,9 +53,9 @@ def plot_all():
     markers = ["o", "s", "^"]
 
     for ax, n in zip(axes.flat, N_SIZES):
-        data   = np.load(HERE / f"results_n{n}.npz")
+        data = np.load(HERE / f"results_n{n}.npz")
         T_vals = data["T_values"]
-        sp     = data["success_probs"]
+        sp = data["success_probs"]
 
         for si, sched in enumerate(SCHEDULES):
             mean = sp[:, :, si].mean(axis=0)
@@ -70,14 +70,14 @@ def plot_all():
         ax.set_ylim(0, 1.05)
         ax.legend(loc='best', numpoints=1)
 
-    fig.suptitle(
-        f"Schedule Comparison (iterations={ITERATIONS}, order={ORDER}, shots={SHOTS})"
-    )
+    # fig.suptitle(
+    #     f"Schedule Comparison (iterations={ITERATIONS}, order={ORDER}, shots={SHOTS})"
+    # )
     plt.tight_layout()
-    plt.savefig(HERE / "schedules.pdf", dpi=200)
+    plt.savefig(HERE / "schedules.svg", dpi=200)
     plt.close()
 
 if __name__ == "__main__":
-    for n in N_SIZES:
-        run_size(n)
+    # for n in N_SIZES:
+        # run_size(n)
     plot_all()
