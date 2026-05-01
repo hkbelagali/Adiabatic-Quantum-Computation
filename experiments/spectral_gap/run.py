@@ -17,7 +17,6 @@ N_POINTS = 100
 T_VALUES = [0.1, 0.5, 1.0, 5.0, 10.0, 50.0, 100.0]
 SUCCESS_THRESHOLD = 0.80
 
-
 def interpolate_T_required(T_vals: np.ndarray, sp_instance: np.ndarray) -> float:
     for i in range(len(T_vals) - 1):
         if sp_instance[i] < SUCCESS_THRESHOLD <= sp_instance[i + 1]:
@@ -28,7 +27,6 @@ def interpolate_T_required(T_vals: np.ndarray, sp_instance: np.ndarray) -> float
     if sp_instance[-1] >= SUCCESS_THRESHOLD:
         return float(T_vals[-1])
     return float("nan")
-
 
 def run():
     all_min_gaps = []
@@ -114,7 +112,7 @@ def plot(results: dict):
     ax3.legend(loc='best')
 
     plt.tight_layout()
-    out = HERE / "spectral_gap.pdf"
+    out = HERE / "spectral_gap.svg"
     plt.savefig(out, dpi=200)
     plt.close()
 
